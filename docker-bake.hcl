@@ -51,7 +51,7 @@ variable "PYPI_SUPERVISOR" {
 }
 
 variable "NAMESPACE" {
-  default = null
+  default = "ghcr.io/fineyoungcannibals/misp-docker"
 }
 
 variable "COMMIT_HASH" {
