@@ -9,7 +9,9 @@ services:
       - "SMARTHOST_USER=${SMARTHOST_USER}"
       - "SMARTHOST_PASSWORD=${SMARTHOST_PASSWORD}"
       - "SMARTHOST_ALIASES=${SMARTHOST_ALIASES}"
-
+    networks:
+      - misp_internal
+      
   redis:
     image: valkey/valkey:7.2
     command: "--requirepass '${REDIS_PASSWORD:-redispassword}'"
@@ -20,6 +22,8 @@ services:
       retries: 3
       start_period: 5s
       start_interval: 5s
+    networks:
+      - misp_internal
 
   db:
     # We use MariaDB because it supports ARM and has the expected collations
@@ -50,9 +54,11 @@ services:
       retries: 3
       start_period: 30s
       start_interval: 5s
+    networks:
+      - misp_internal
 
   misp-core:
-    image: ghcr.io/misp/misp-docker/misp-core:${CORE_RUNNING_TAG:-latest}
+    image: ghcr.io/fineyoungcannibals/misp-docker/misp-core:${CORE_RUNNING_TAG:-latest}
     cap_add:
       - AUDIT_WRITE
     build:
@@ -251,9 +257,20 @@ services:
       - "HSTS_MAX_AGE=${HSTS_MAX_AGE}"
       - "X_FRAME_OPTIONS=${X_FRAME_OPTIONS}"
       - "CONTENT_SECURITY_POLICY=${CONTENT_SECURITY_POLICY}"
-
+    networks:
+      - misp_internal
+      - dev_lab
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dev_lab"
+      - "traefik.http.routers.misp.rule=Host(`dev-misp.trashcollector.dev`)"
+      - "traefik.http.routers.misp.entrypoints=https"
+      - "traefik.http.routers.misp.tls=true"
+      - "traefik.http.routers.misp.tls.certresolver=letsencrypt"
+      - "traefik.http.services.misp.loadbalancer.server.port=80"
+      
   misp-modules:
-    image: ghcr.io/misp/misp-docker/misp-modules:${MODULES_RUNNING_TAG:-latest}
+    image: ghcr.io/fineyoungcannibals/misp-docker/misp-modules:${MODULES_RUNNING_TAG:-latest}
     build:
       context: modules/.
       args:
@@ -273,6 +290,11 @@ services:
       - "./custom/expansion/:/custom/expansion/"
       - "./custom/export_mod/:/custom/export_mod/"
       - "./custom/import_mod/:/custom/import_mod/"
-
+    networks:
+      - misp_internal
 volumes:
-    mysql_data:
+  mysql_data:
+networks:
+  misp_internal:
+  dev_lab:
+    external: true
