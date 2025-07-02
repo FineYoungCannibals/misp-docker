@@ -30,3 +30,17 @@ location ~ ^/[^/]+\.php(/|$) {
     set $path_info $fastcgi_path_info;
     fastcgi_param PATH_INFO $path_info;
 }
+
+# Handle static assets
+location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+    try_files $uri =404;
+}
+
+# Health check endpoint for Traefik
+location /health {
+    access_log off;
+    return 200 "healthy\n";
+    add_header Content-Type text/plain;
+}
